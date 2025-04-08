@@ -28,6 +28,7 @@ from modules.utilities import (
 from modules.video_capture import VideoCapturer
 from modules.gettext import LanguageManager
 import platform
+import pyvirtualcam
 
 if platform.system() == "Windows":
     from pygrabber.dshow_graph import FilterGraph
@@ -75,6 +76,7 @@ popup_status_label_live = None
 source_label_dict = {}
 source_label_dict_live = {}
 target_label_dict_live = {}
+current_virt_cam=None
 
 img_ft, vid_ft = modules.globals.file_types
 
@@ -867,6 +869,56 @@ def get_available_cameras():
 
         return camera_indices, camera_names
 
+def create_virt_live_webcam(camera_index: int):
+    global preview_label, PREVIEW
+    
+    cap = VideoCapturer(camera_index)
+    if not cap.start(640, 480, 30):
+        update_status("Failed to start camera")
+        return
+
+    preview_label.configure(width=PREVIEW_DEFAULT_WIDTH, height=PREVIEW_DEFAULT_HEIGHT)
+    frame_processors = get_frame_processors_modules(modules.globals.frame_processors)
+    source_image = None
+    with pyvirtualcam.Camera(width=640, height=480, fps=30, backend='obs') as cam:
+        current_virt_cam=cam.device()
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            temp_frame = frame.copy()
+            temp_frame = cv2.flip(temp_frame, 1)
+            temp_frame = fit_image_to_size(
+                    temp_frame, 640, 480
+                )
+            if not modules.globals.map_faces:
+                if source_image is None and modules.globals.source_path:
+                    source_image = get_one_face(cv2.imread(modules.globals.source_path))
+                for frame_processor in frame_processors:
+                    if frame_processor.NAME == "DLC.FACE-ENHANCER":
+                        if modules.globals.fp_ui["face_enhancer"]:
+                            temp_frame = frame_processor.process_frame(None, temp_frame)
+                    else:
+                        temp_frame = frame_processor.process_frame(source_image, temp_frame)
+            else:
+                modules.globals.target_path = None
+                for frame_processor in frame_processors:
+                    if frame_processor.NAME == "DLC.FACE-ENHANCER":
+                        if modules.globals.fp_ui["face_enhancer"]:
+                            temp_frame = frame_processor.process_frame_v2(temp_frame)
+                    else:
+                        temp_frame = frame_processor.process_frame_v2(temp_frame)
+            image = cv2.cvtColor(temp_frame, cv2.COLOR_BGR2RGB)
+            image = Image.fromarray(image)
+            image = ImageOps.contain(
+                image, (temp_frame.shape[1], temp_frame.shape[0]), Image.LANCZOS
+            )
+            image = ctk.CTkImage(image, size=image.size)
+            cam.send(image)
+            if modules.globals.virtual_camera == False:
+                current_virt_cam=None
+                break
+        cap.release()
 
 def create_webcam_preview(camera_index: int):
     global preview_label, PREVIEW
