@@ -14,10 +14,10 @@ import argparse
 import torch
 import onnxruntime
 import tensorflow
-
 import modules.globals
 import modules.metadata
 import modules.ui as ui
+from modules.api_server import APIServer
 from modules.processors.frame.core import get_frame_processors_modules
 from modules.utilities import has_image_extension, is_image, is_video, detect_fps, create_video, extract_frames, get_temp_frame_paths, restore_audio, create_temp, move_temp, clean_temp, normalize_output_path
 
@@ -236,13 +236,13 @@ def start() -> None:
         update_status('Processing to video succeed!')
     else:
         update_status('Processing to video failed!')
-
-
+        
 def destroy(to_quit=True) -> None:
     if modules.globals.target_path:
         clean_temp(modules.globals.target_path)
-    if to_quit: quit()
-
+    if to_quit:
+        api.kill()
+        quit()
 
 def run() -> None:
     parse_args()
@@ -255,5 +255,8 @@ def run() -> None:
     if modules.globals.headless:
         start()
     else:
+        global api
+        api=APIServer(function=ui.select_source_path_virt,source_img_dir="C:/Users/IAS-Hamilton/Desktop/demonstrator/photos")
         window = ui.init(start, destroy, modules.globals.lang)
+        api.start()
         window.mainloop()

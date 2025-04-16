@@ -343,6 +343,19 @@ def create_root(start: Callable[[], None], destroy: Callable[[], None]) -> ctk.C
         camera_optionmenu = ctk.CTkOptionMenu(
             root, variable=camera_variable, values=camera_names
         )
+    # --- Virtual Cam ---
+    virtual_cam_button = ctk.CTkButton(
+        root, 
+        text=_("Virtual Cam"), 
+        cursor="hand2", 
+        command=lambda: create_virt_live_webcam(camera_indices[camera_names.index(camera_variable.get())]),
+        state=(
+            "normal"
+            if camera_names and camera_names[0] != "No cameras found"
+            else "disabled"
+        )
+    )
+    virtual_cam_button.place(relx=0.65,rely=0.80,relwidth=0.2, relheight=0.05)
 
     camera_optionmenu.place(relx=0.35, rely=0.86, relwidth=0.25, relheight=0.05)
 
@@ -583,7 +596,6 @@ def update_tumbler(var: str, value: bool) -> None:
 
 def select_source_path() -> None:
     global RECENT_DIRECTORY_SOURCE, img_ft, vid_ft
-
     PREVIEW.withdraw()
     source_path = ctk.filedialog.askopenfilename(
         title=_("select an source image"),
@@ -599,7 +611,14 @@ def select_source_path() -> None:
         modules.globals.source_path = None
         source_label.configure(image=None)
 
-
+def select_source_path_virt(pth:str) -> None:
+    modules.globals.virtual_camera = False
+    source_path = pth
+    if is_image(source_path):
+        modules.globals.source_path = source_path
+    else:
+        modules.globals.source_path = None
+    create_virt_live_webcam()
 def swap_faces_paths() -> None:
     global RECENT_DIRECTORY_SOURCE, RECENT_DIRECTORY_TARGET
 
@@ -869,19 +888,61 @@ def get_available_cameras():
 
         return camera_indices, camera_names
 
-def create_virt_live_webcam(camera_index: int):
+def create_virt_live_webcam(camera_index: int = 0):
     global preview_label, PREVIEW
-    
+    modules.globals.virtual_camera=True
     cap = VideoCapturer(camera_index)
-    if not cap.start(640, 480, 30):
+    if not cap.start(1920, 1080, 30):
         update_status("Failed to start camera")
         return
 
     preview_label.configure(width=PREVIEW_DEFAULT_WIDTH, height=PREVIEW_DEFAULT_HEIGHT)
     frame_processors = get_frame_processors_modules(modules.globals.frame_processors)
     source_image = None
-    with pyvirtualcam.Camera(width=640, height=480, fps=30, backend='obs') as cam:
-        current_virt_cam=cam.device()
+    available_cameras = get_available_cameras()
+    camera_indices, camera_names = available_cameras
+    if modules.globals.cam==None:
+        with pyvirtualcam.Camera(width=1920, height=1080, fps=30,backend='obs') as cam:
+            modules.globals.cam=cam
+            current_virt_cam=cam.device
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                temp_frame = frame.copy()
+                temp_frame = cv2.flip(temp_frame, 1)
+                temp_frame = fit_image_to_size(
+                        temp_frame, 1920, 1080
+                    )
+                if not modules.globals.map_faces:
+                    if source_image is None and modules.globals.source_path:
+                        source_image = get_one_face(cv2.imread(modules.globals.source_path))
+                    for frame_processor in frame_processors:
+                        if frame_processor.NAME == "DLC.FACE-ENHANCER":
+                            if modules.globals.fp_ui["face_enhancer"]:
+                                temp_frame = frame_processor.process_frame(None, temp_frame)
+                        else:
+                            temp_frame = frame_processor.process_frame(source_image, temp_frame)
+                else:
+                    modules.globals.target_path = None
+                    for frame_processor in frame_processors:
+                        if frame_processor.NAME == "DLC.FACE-ENHANCER":
+                            if modules.globals.fp_ui["face_enhancer"]:
+                                temp_frame = frame_processor.process_frame_v2(temp_frame)
+                        else:
+                            temp_frame = frame_processor.process_frame_v2(temp_frame)
+                image = cv2.cvtColor(temp_frame, cv2.COLOR_BGR2RGB)
+                image = cv2.resize(image, (1920, 1080), interpolation=cv2.INTER_LANCZOS4)
+                cam.send(image)
+                ROOT.update()
+                if modules.globals.virtual_camera == False:
+                    current_virt_cam=None
+                    cam.close()
+                    break
+            cap.release()
+    else:
+        cam=modules.globals.cam
+        current_virt_cam=cam.device
         while True:
             ret, frame = cap.read()
             if not ret:
@@ -889,7 +950,7 @@ def create_virt_live_webcam(camera_index: int):
             temp_frame = frame.copy()
             temp_frame = cv2.flip(temp_frame, 1)
             temp_frame = fit_image_to_size(
-                    temp_frame, 640, 480
+                    temp_frame, 1920, 1080
                 )
             if not modules.globals.map_faces:
                 if source_image is None and modules.globals.source_path:
@@ -909,16 +970,15 @@ def create_virt_live_webcam(camera_index: int):
                     else:
                         temp_frame = frame_processor.process_frame_v2(temp_frame)
             image = cv2.cvtColor(temp_frame, cv2.COLOR_BGR2RGB)
-            image = Image.fromarray(image)
-            image = ImageOps.contain(
-                image, (temp_frame.shape[1], temp_frame.shape[0]), Image.LANCZOS
-            )
-            image = ctk.CTkImage(image, size=image.size)
+            image = cv2.resize(image, (1920, 1080), interpolation=cv2.INTER_LANCZOS4)
             cam.send(image)
+            ROOT.update()
             if modules.globals.virtual_camera == False:
                 current_virt_cam=None
+                cam.close()
                 break
         cap.release()
+    
 
 def create_webcam_preview(camera_index: int):
     global preview_label, PREVIEW

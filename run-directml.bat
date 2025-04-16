@@ -1,1 +1,2 @@
-python run.py --execution-provider dml
+.venv\Scripts\python.exe run.py --execution-provider dml
+pause
