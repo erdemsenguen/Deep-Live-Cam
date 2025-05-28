@@ -54,7 +54,7 @@ def get_face_enhancer() -> Any:
     with THREAD_LOCK:
         if FACE_ENHANCER is None:
             model_path = os.path.join(models_dir, "GFPGANv1.4.pth")
-            
+
             match platform.system():
                 case "Darwin":  # Mac OS
                     if torch.backends.mps.is_available():

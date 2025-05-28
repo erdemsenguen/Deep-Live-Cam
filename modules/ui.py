@@ -76,7 +76,7 @@ popup_status_label_live = None
 source_label_dict = {}
 source_label_dict_live = {}
 target_label_dict_live = {}
-current_virt_cam=None
+current_virt_cam = None
 
 img_ft, vid_ft = modules.globals.file_types
 
@@ -160,7 +160,10 @@ def create_root(start: Callable[[], None], destroy: Callable[[], None]) -> ctk.C
     target_label.place(relx=0.6, rely=0.1, relwidth=0.3, relheight=0.25)
 
     select_face_button = ctk.CTkButton(
-        root, text=_("Select a face"), cursor="hand2", command=lambda: select_source_path()
+        root,
+        text=_("Select a face"),
+        cursor="hand2",
+        command=lambda: select_source_path(),
     )
     select_face_button.place(relx=0.1, rely=0.4, relwidth=0.3, relheight=0.1)
 
@@ -268,7 +271,7 @@ def create_root(start: Callable[[], None], destroy: Callable[[], None]) -> ctk.C
         command=lambda: (
             setattr(modules.globals, "map_faces", map_faces.get()),
             save_switch_states(),
-            close_mapper_window() if not map_faces.get() else None
+            close_mapper_window() if not map_faces.get() else None,
         ),
     )
     map_faces_switch.place(relx=0.1, rely=0.75)
@@ -309,7 +312,10 @@ def create_root(start: Callable[[], None], destroy: Callable[[], None]) -> ctk.C
     show_mouth_mask_box_switch.place(relx=0.6, rely=0.55)
 
     start_button = ctk.CTkButton(
-        root, text=_("Start"), cursor="hand2", command=lambda: analyze_target(start, root)
+        root,
+        text=_("Start"),
+        cursor="hand2",
+        command=lambda: analyze_target(start, root),
     )
     start_button.place(relx=0.15, rely=0.80, relwidth=0.2, relheight=0.05)
 
@@ -345,17 +351,19 @@ def create_root(start: Callable[[], None], destroy: Callable[[], None]) -> ctk.C
         )
     # --- Virtual Cam ---
     virtual_cam_button = ctk.CTkButton(
-        root, 
-        text=_("Virtual Cam"), 
-        cursor="hand2", 
-        command=lambda: create_virt_live_webcam(camera_indices[camera_names.index(camera_variable.get())]),
+        root,
+        text=_("Virtual Cam"),
+        cursor="hand2",
+        command=lambda: create_virt_live_webcam(
+            camera_indices[camera_names.index(camera_variable.get())]
+        ),
         state=(
             "normal"
             if camera_names and camera_names[0] != "No cameras found"
             else "disabled"
-        )
+        ),
     )
-    virtual_cam_button.place(relx=0.65,rely=0.80,relwidth=0.2, relheight=0.05)
+    virtual_cam_button.place(relx=0.65, rely=0.80, relwidth=0.2, relheight=0.05)
 
     camera_optionmenu.place(relx=0.35, rely=0.86, relwidth=0.25, relheight=0.05)
 
@@ -396,6 +404,7 @@ def create_root(start: Callable[[], None], destroy: Callable[[], None]) -> ctk.C
 
     return root
 
+
 def close_mapper_window():
     global POPUP, POPUP_LIVE
     if POPUP and POPUP.winfo_exists():
@@ -430,7 +439,7 @@ def analyze_target(start: Callable[[], None], root: ctk.CTk):
 
 
 def create_source_target_popup(
-        start: Callable[[], None], root: ctk.CTk, map: list
+    start: Callable[[], None], root: ctk.CTk, map: list
 ) -> None:
     global POPUP, popup_status_label
 
@@ -499,7 +508,7 @@ def create_source_target_popup(
 
 
 def update_popup_source(
-        scrollable_frame: ctk.CTkScrollableFrame, map: list, button_num: int
+    scrollable_frame: ctk.CTkScrollableFrame, map: list, button_num: int
 ) -> list:
     global source_label_dict
 
@@ -524,7 +533,7 @@ def update_popup_source(
             x_min, y_min, x_max, y_max = face["bbox"]
 
             map[button_num]["source"] = {
-                "cv2": cv2_img[int(y_min): int(y_max), int(x_min): int(x_max)],
+                "cv2": cv2_img[int(y_min) : int(y_max), int(x_min) : int(x_max)],
                 "face": face,
             }
 
@@ -611,7 +620,8 @@ def select_source_path() -> None:
         modules.globals.source_path = None
         source_label.configure(image=None)
 
-def select_source_path_virt(pth:str) -> None:
+
+def select_source_path_virt(pth: str) -> None:
     modules.globals.virtual_camera = False
     source_path = pth
     if is_image(source_path):
@@ -619,6 +629,8 @@ def select_source_path_virt(pth:str) -> None:
     else:
         modules.globals.source_path = None
     create_virt_live_webcam()
+
+
 def swap_faces_paths() -> None:
     global RECENT_DIRECTORY_SOURCE, RECENT_DIRECTORY_TARGET
 
@@ -726,7 +738,7 @@ def fit_image_to_size(image, width: int, height: int):
     ratio_h = height / h
     # Use the smaller ratio to ensure the image fits within the given dimensions
     ratio = min(ratio_w, ratio_h)
-    
+
     # Compute new dimensions, ensuring they're at least 1 pixel
     new_width = max(1, int(ratio * w))
     new_height = max(1, int(ratio * h))
@@ -743,7 +755,7 @@ def render_image_preview(image_path: str, size: Tuple[int, int]) -> ctk.CTkImage
 
 
 def render_video_preview(
-        video_path: str, size: Tuple[int, int], frame_number: int = 0
+    video_path: str, size: Tuple[int, int], frame_number: int = 0
 ) -> ctk.CTkImage:
     capture = cv2.VideoCapture(video_path)
     if frame_number:
@@ -783,7 +795,7 @@ def update_preview(frame_number: int = 0) -> None:
         if modules.globals.nsfw_filter and check_and_ignore_nsfw(temp_frame):
             return
         for frame_processor in get_frame_processors_modules(
-                modules.globals.frame_processors
+            modules.globals.frame_processors
         ):
             temp_frame = frame_processor.process_frame(
                 get_one_face(cv2.imread(modules.globals.source_path)), temp_frame
@@ -816,7 +828,6 @@ def webcam_preview(root: ctk.CTk, camera_index: int):
         create_source_target_popup_for_webcam(
             root, modules.globals.source_target_map, camera_index
         )
-
 
 
 def get_available_cameras():
@@ -888,9 +899,10 @@ def get_available_cameras():
 
         return camera_indices, camera_names
 
+
 def create_virt_live_webcam(camera_index: int = 0):
     global preview_label, PREVIEW
-    modules.globals.virtual_camera=True
+    modules.globals.virtual_camera = True
     cap = VideoCapturer(camera_index)
     if not cap.start(1920, 1080, 30):
         update_status("Failed to start camera")
@@ -901,57 +913,63 @@ def create_virt_live_webcam(camera_index: int = 0):
     source_image = None
     available_cameras = get_available_cameras()
     camera_indices, camera_names = available_cameras
-    if modules.globals.cam==None:
-        with pyvirtualcam.Camera(width=1920, height=1080, fps=30,backend='obs') as cam:
-            modules.globals.cam=cam
-            current_virt_cam=cam.device
+    if modules.globals.cam == None:
+        with pyvirtualcam.Camera(width=1920, height=1080, fps=30, backend="obs") as cam:
+            modules.globals.cam = cam
+            current_virt_cam = cam.device
             while True:
                 ret, frame = cap.read()
                 if not ret:
                     break
                 temp_frame = frame.copy()
                 temp_frame = cv2.flip(temp_frame, 1)
-                temp_frame = fit_image_to_size(
-                        temp_frame, 1920, 1080
-                    )
+                temp_frame = fit_image_to_size(temp_frame, 1920, 1080)
                 if not modules.globals.map_faces:
                     if source_image is None and modules.globals.source_path:
-                        source_image = get_one_face(cv2.imread(modules.globals.source_path))
+                        source_image = get_one_face(
+                            cv2.imread(modules.globals.source_path)
+                        )
                     for frame_processor in frame_processors:
                         if frame_processor.NAME == "DLC.FACE-ENHANCER":
                             if modules.globals.fp_ui["face_enhancer"]:
-                                temp_frame = frame_processor.process_frame(None, temp_frame)
+                                temp_frame = frame_processor.process_frame(
+                                    None, temp_frame
+                                )
                         else:
-                            temp_frame = frame_processor.process_frame(source_image, temp_frame)
+                            temp_frame = frame_processor.process_frame(
+                                source_image, temp_frame
+                            )
                 else:
                     modules.globals.target_path = None
                     for frame_processor in frame_processors:
                         if frame_processor.NAME == "DLC.FACE-ENHANCER":
                             if modules.globals.fp_ui["face_enhancer"]:
-                                temp_frame = frame_processor.process_frame_v2(temp_frame)
+                                temp_frame = frame_processor.process_frame_v2(
+                                    temp_frame
+                                )
                         else:
                             temp_frame = frame_processor.process_frame_v2(temp_frame)
                 image = cv2.cvtColor(temp_frame, cv2.COLOR_BGR2RGB)
-                image = cv2.resize(image, (1920, 1080), interpolation=cv2.INTER_LANCZOS4)
+                image = cv2.resize(
+                    image, (1920, 1080), interpolation=cv2.INTER_LANCZOS4
+                )
                 cam.send(image)
                 ROOT.update()
                 if modules.globals.virtual_camera == False:
-                    current_virt_cam=None
+                    current_virt_cam = None
                     cam.close()
                     break
             cap.release()
     else:
-        cam=modules.globals.cam
-        current_virt_cam=cam.device
+        cam = modules.globals.cam
+        current_virt_cam = cam.device
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
             temp_frame = frame.copy()
             temp_frame = cv2.flip(temp_frame, 1)
-            temp_frame = fit_image_to_size(
-                    temp_frame, 1920, 1080
-                )
+            temp_frame = fit_image_to_size(temp_frame, 1920, 1080)
             if not modules.globals.map_faces:
                 if source_image is None and modules.globals.source_path:
                     source_image = get_one_face(cv2.imread(modules.globals.source_path))
@@ -960,7 +978,9 @@ def create_virt_live_webcam(camera_index: int = 0):
                         if modules.globals.fp_ui["face_enhancer"]:
                             temp_frame = frame_processor.process_frame(None, temp_frame)
                     else:
-                        temp_frame = frame_processor.process_frame(source_image, temp_frame)
+                        temp_frame = frame_processor.process_frame(
+                            source_image, temp_frame
+                        )
             else:
                 modules.globals.target_path = None
                 for frame_processor in frame_processors:
@@ -974,11 +994,11 @@ def create_virt_live_webcam(camera_index: int = 0):
             cam.send(image)
             ROOT.update()
             if modules.globals.virtual_camera == False:
-                current_virt_cam=None
+                current_virt_cam = None
                 cam.close()
                 break
         cap.release()
-    
+
 
 def create_webcam_preview(camera_index: int):
     global preview_label, PREVIEW
@@ -1073,7 +1093,7 @@ def create_webcam_preview(camera_index: int):
 
 
 def create_source_target_popup_for_webcam(
-        root: ctk.CTk, map: list, camera_index: int
+    root: ctk.CTk, map: list, camera_index: int
 ) -> None:
     global POPUP_LIVE, popup_status_label_live
 
@@ -1103,17 +1123,20 @@ def create_source_target_popup_for_webcam(
     popup_status_label_live = ctk.CTkLabel(POPUP_LIVE, text=None, justify="center")
     popup_status_label_live.grid(row=1, column=0, pady=15)
 
-    add_button = ctk.CTkButton(POPUP_LIVE, text=_("Add"), command=lambda: on_add_click())
+    add_button = ctk.CTkButton(
+        POPUP_LIVE, text=_("Add"), command=lambda: on_add_click()
+    )
     add_button.place(relx=0.1, rely=0.92, relwidth=0.2, relheight=0.05)
 
-    clear_button = ctk.CTkButton(POPUP_LIVE, text=_("Clear"), command=lambda: on_clear_click())
+    clear_button = ctk.CTkButton(
+        POPUP_LIVE, text=_("Clear"), command=lambda: on_clear_click()
+    )
     clear_button.place(relx=0.4, rely=0.92, relwidth=0.2, relheight=0.05)
 
     close_button = ctk.CTkButton(
         POPUP_LIVE, text=_("Submit"), command=lambda: on_submit_click()
     )
     close_button.place(relx=0.7, rely=0.92, relwidth=0.2, relheight=0.05)
-
 
 
 def clear_source_target_images(map: list):
@@ -1215,7 +1238,7 @@ def refresh_data(map: list):
 
 
 def update_webcam_source(
-        scrollable_frame: ctk.CTkScrollableFrame, map: list, button_num: int
+    scrollable_frame: ctk.CTkScrollableFrame, map: list, button_num: int
 ) -> list:
     global source_label_dict_live
 
@@ -1240,7 +1263,7 @@ def update_webcam_source(
             x_min, y_min, x_max, y_max = face["bbox"]
 
             map[button_num]["source"] = {
-                "cv2": cv2_img[int(y_min): int(y_max), int(x_min): int(x_max)],
+                "cv2": cv2_img[int(y_min) : int(y_max), int(x_min) : int(x_max)],
                 "face": face,
             }
 
@@ -1267,7 +1290,7 @@ def update_webcam_source(
 
 
 def update_webcam_target(
-        scrollable_frame: ctk.CTkScrollableFrame, map: list, button_num: int
+    scrollable_frame: ctk.CTkScrollableFrame, map: list, button_num: int
 ) -> list:
     global target_label_dict_live
 
@@ -1292,7 +1315,7 @@ def update_webcam_target(
             x_min, y_min, x_max, y_max = face["bbox"]
 
             map[button_num]["target"] = {
-                "cv2": cv2_img[int(y_min): int(y_max), int(x_min): int(x_max)],
+                "cv2": cv2_img[int(y_min) : int(y_max), int(x_min) : int(x_max)],
                 "face": face,
             }
 

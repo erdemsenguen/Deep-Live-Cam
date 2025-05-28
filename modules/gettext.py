@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+
 class LanguageManager:
     def __init__(self, default_language="en"):
         self.current_language = default_language

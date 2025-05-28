@@ -6,21 +6,23 @@ from typing import Any, List, Callable
 from tqdm import tqdm
 
 import modules
-import modules.globals                   
+import modules.globals
 
 FRAME_PROCESSORS_MODULES: List[ModuleType] = []
 FRAME_PROCESSORS_INTERFACE = [
-    'pre_check',
-    'pre_start',
-    'process_frame',
-    'process_image',
-    'process_video'
+    "pre_check",
+    "pre_start",
+    "process_frame",
+    "process_image",
+    "process_video",
 ]
 
 
 def load_frame_processor_module(frame_processor: str) -> Any:
     try:
-        frame_processor_module = importlib.import_module(f'modules.processors.frame.{frame_processor}')
+        frame_processor_module = importlib.import_module(
+            f"modules.processors.frame.{frame_processor}"
+        )
         for method_name in FRAME_PROCESSORS_INTERFACE:
             if not hasattr(frame_processor_module, method_name):
                 sys.exit()
@@ -40,6 +42,7 @@ def get_frame_processors_modules(frame_processors: List[str]) -> List[ModuleType
     set_frame_processors_modules_from_ui(frame_processors)
     return FRAME_PROCESSORS_MODULES
 
+
 def set_frame_processors_modules_from_ui(frame_processors: List[str]) -> None:
     global FRAME_PROCESSORS_MODULES
     for frame_processor, state in modules.globals.fp_ui.items():
@@ -55,7 +58,13 @@ def set_frame_processors_modules_from_ui(frame_processors: List[str]) -> None:
             except:
                 pass
 
-def multi_process_frame(source_path: str, temp_frame_paths: List[str], process_frames: Callable[[str, List[str], Any], None], progress: Any = None) -> None:
+
+def multi_process_frame(
+    source_path: str,
+    temp_frame_paths: List[str],
+    process_frames: Callable[[str, List[str], Any], None],
+    progress: Any = None,
+) -> None:
     with ThreadPoolExecutor(max_workers=modules.globals.execution_threads) as executor:
         futures = []
         for path in temp_frame_paths:
@@ -65,9 +74,27 @@ def multi_process_frame(source_path: str, temp_frame_paths: List[str], process_f
             future.result()
 
 
-def process_video(source_path: str, frame_paths: list[str], process_frames: Callable[[str, List[str], Any], None]) -> None:
-    progress_bar_format = '{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]'
+def process_video(
+    source_path: str,
+    frame_paths: list[str],
+    process_frames: Callable[[str, List[str], Any], None],
+) -> None:
+    progress_bar_format = (
+        "{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]"
+    )
     total = len(frame_paths)
-    with tqdm(total=total, desc='Processing', unit='frame', dynamic_ncols=True, bar_format=progress_bar_format) as progress:
-        progress.set_postfix({'execution_providers': modules.globals.execution_providers, 'execution_threads': modules.globals.execution_threads, 'max_memory': modules.globals.max_memory})
+    with tqdm(
+        total=total,
+        desc="Processing",
+        unit="frame",
+        dynamic_ncols=True,
+        bar_format=progress_bar_format,
+    ) as progress:
+        progress.set_postfix(
+            {
+                "execution_providers": modules.globals.execution_providers,
+                "execution_threads": modules.globals.execution_threads,
+                "max_memory": modules.globals.max_memory,
+            }
+        )
         multi_process_frame(source_path, frame_paths, process_frames, progress)

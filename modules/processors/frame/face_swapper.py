@@ -119,7 +119,6 @@ def process_frame(source_face: Face, temp_frame: Frame) -> Frame:
     return temp_frame
 
 
-
 def process_frame_v2(temp_frame: Frame, temp_frame_path: str = "") -> Frame:
     if is_image(modules.globals.target_path):
         if modules.globals.many_faces:
